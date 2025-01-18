@@ -7,7 +7,7 @@ import os
 import streamlit as st
 
 # 만약 st.secrets를 사용한다면
-ELASTIC_API_KEY = st.secrets.get("ELASTIC_API_KEY", None)
+ELASTIC_API_KEY = st.secrets["ELASTIC_API_KEY"]
 
 if not ELASTIC_API_KEY:
     st.error(
