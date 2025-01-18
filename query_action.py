@@ -4,6 +4,7 @@ from datetime import datetime
 import asyncio
 from google.generativeai import configure, GenerativeModel
 import os
+import streamlit as st
 
 
 class DatabaseSearch:
@@ -32,12 +33,13 @@ class DatabaseSearch:
                 verify_certs=True,
             )
 
-            print("연결 테스트 중...")
             if not self.es.ping():
+                st.error("Elasticsearch 서버에 연결할 수 없습니다.")
                 raise ConnectionError("Elasticsearch 서버에 연결할 수 없습니다.")
-            print("Elastic Cloud 연결 성공!")
+            st.success("Elastic Cloud 연결 성공!")
+
         except Exception as e:
-            print(f"Elasticsearch 연결 실패: {str(e)}")
+            st.error(f"Elasticsearch 연결 실패: {e}")
             raise
 
     def create_es_index(self):
@@ -593,28 +595,28 @@ class NewsChatbot:
         print("")
 
 
-async def main():
-    """메인 실행 함수"""
-    try:
-        chatbot = NewsChatbot()
-        await chatbot.run()
-    except Exception as e:
-        print(f"실행 중 오류 발생: {e}")
-    finally:
-        print("프로그램을 종료합니다.")
+# async def main():
+#     """메인 실행 함수"""
+#     try:
+#         chatbot = NewsChatbot()
+#         await chatbot.run()
+#     except Exception as e:
+#         print(f"실행 중 오류 발생: {e}")
+#     finally:
+#         print("프로그램을 종료합니다.")
 
 
-if __name__ == "__main__":
-    try:
-        # 데이터베이스 검색 객체 생성
-        print("Elasticsearch 동기화를 시작합니다...")
-        db_search = DatabaseSearch()
+# if __name__ == "__main__":
+#     try:
+#         # 데이터베이스 검색 객체 생성
+#         print("Elasticsearch 동기화를 시작합니다...")
+#         db_search = DatabaseSearch()
 
-        # MongoDB에서 Elasticsearch로 데이터 동기화
-        print("MongoDB의 데이터를 Elasticsearch로 동기화합니다...")
-        db_search.sync_mongodb_to_elasticsearch()
+#         # MongoDB에서 Elasticsearch로 데이터 동기화
+#         print("MongoDB의 데이터를 Elasticsearch로 동기화합니다...")
+#         db_search.sync_mongodb_to_elasticsearch()
 
-        print("\n동기화가 완료되었습니다.")
+#         print("\n동기화가 완료되었습니다.")
 
-    except Exception as e:
-        print(f"오류 발생: {e}")
+#     except Exception as e:
+#         print(f"오류 발생: {e}")
