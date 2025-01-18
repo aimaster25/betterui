@@ -279,19 +279,12 @@ class ResponseGeneration:
     """초기 답변 생성을 담당하는 클래스"""
 
     def __init__(self):
-        # API 키 설정
-        try:
-            # streamlit의 secrets에서 먼저 시도
-            api_key = st.secrets["GEMINI_API_KEY"]
-        except Exception:
-            # 실패하면 환경 변수에서 시도
-            from dotenv import load_dotenv
-
-            load_dotenv()
-            api_key = os.getenv("GEMINI_API_KEY")
-
+        # API 키를 직접 설정
+        api_key = "AIzaSyAzYqKsFxnLKfz_binMmGzr_M-SWrQA3Gk"
         if not api_key:
             raise ValueError("GEMINI_API_KEY가 설정되지 않았습니다.")
+        configure(api_key=api_key)
+        self.model = GenerativeModel("gemini-2.0-flash-exp")
 
         configure(api_key=api_key)
         self.model = GenerativeModel("gemini-2.0-flash-exp")
