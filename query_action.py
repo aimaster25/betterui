@@ -3,6 +3,8 @@ from pymongo import MongoClient
 from datetime import datetime
 import asyncio
 from google.generativeai import configure, GenerativeModel
+import sys
+import streamlit as st
 import os
 from dotenv import load_dotenv
 
@@ -60,12 +62,6 @@ class DatabaseSearch:
         """Elasticsearch 인덱스 생성"""
         settings = {
             "settings": {
-                "number_of_shards": 1,
-                "number_of_replicas": 0,
-                "mapping": {"total_fields": {"limit": 2000}},
-                "index": {
-                    "mapping": {"nested_fields": {"limit": 100}, "depth": {"limit": 20}}
-                },
                 "analysis": {
                     "analyzer": {
                         "korean": {
@@ -74,7 +70,7 @@ class DatabaseSearch:
                             "filter": ["lowercase", "trim", "stop"],
                         }
                     }
-                },
+                }
             },
             "mappings": {
                 "dynamic": False,
@@ -89,14 +85,6 @@ class DatabaseSearch:
                         },
                     },
                     "cleaned_content": {
-                        "type": "text",
-                        "analyzer": "korean",
-                        "fields": {
-                            "english": {"type": "text", "analyzer": "english"},
-                            "ngram": {"type": "text", "analyzer": "standard"},
-                        },
-                    },
-                    "original_content": {
                         "type": "text",
                         "analyzer": "korean",
                         "fields": {
