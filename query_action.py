@@ -27,11 +27,15 @@ class DatabaseSearch:
         # Elasticsearch 연결 설정
         try:
             # Streamlit secrets에서 먼저 시도
+            print("API 키 로드 시도...")  # 디버깅용
             api_key = st.secrets["ELASTIC_API_KEY"]
+            print("현재 API 키:", api_key[:5] + "...")  # API 키의 앞부분만 출력
+
             if not api_key:
                 load_dotenv()
                 api_key = os.getenv("ELASTIC_API_KEY")
-        except Exception:
+        except Exception as e:
+            print(f"Secret 로드 중 오류: {e}")  # 디버깅용
             load_dotenv()
             api_key = os.getenv("ELASTIC_API_KEY")
 
