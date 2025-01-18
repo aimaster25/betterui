@@ -29,15 +29,18 @@ class DatabaseSearch:
             # Streamlit secrets에서 먼저 시도
             api_key = st.secrets["ELASTIC_API_KEY"]
             if not api_key:
-                # 없으면 .env에서 시도
-                load_dotenv()  # .env 파일에서 환경 변수 로드
+                load_dotenv()
                 api_key = os.getenv("ELASTIC_API_KEY")
+        except Exception:
+            load_dotenv()
+            api_key = os.getenv("ELASTIC_API_KEY")
 
-            if not api_key:
-                raise ValueError("ELASTIC_API_KEY가 설정되지 않았습니다.")
+        if not api_key:
+            raise ValueError("ELASTIC_API_KEY가 설정되지 않았습니다.")
 
+        try:
             self.es = Elasticsearch(
-                "https://my-elasticsearch-project-e8b084.es.us-east-1.aws.elastic.cloud:443",  # 클라우드 엔드포인트 URL
+                "https://my-elasticsearch-project-e8b084.es.us-east-1.aws.elastic.cloud:443",
                 api_key=api_key,
                 verify_certs=True,
             )
