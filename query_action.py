@@ -26,7 +26,11 @@ class DatabaseSearch:
 
         # Elasticsearch 연결 설정
         try:
+            load_dotenv()  # .env 파일에서 환경 변수 로드
             api_key = os.getenv("ELASTIC_API_KEY")
+            if not api_key:
+                raise ValueError("ELASTIC_API_KEY가 설정되지 않았습니다.")
+
             self.es = Elasticsearch(
                 "https://my-elasticsearch-project-e8b084.es.us-east-1.aws.elastic.cloud:443",  # 클라우드 엔드포인트 URL
                 api_key=api_key,
