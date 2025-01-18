@@ -3,10 +3,7 @@ from pymongo import MongoClient
 from datetime import datetime
 import asyncio
 from google.generativeai import configure, GenerativeModel
-import sys
-import streamlit as st
 import os
-from dotenv import load_dotenv
 
 
 class DatabaseSearch:
@@ -27,36 +24,21 @@ class DatabaseSearch:
             raise
 
         # Elasticsearch 연결 설정
-        try:
-            # Streamlit secrets에서 먼저 시도
-            print("API 키 로드 시도...")  # 디버깅용
-            api_key = st.secrets["ELASTIC_API_KEY"]
-            print("현재 API 키:", api_key[:5] + "...")  # API 키의 앞부분만 출력
-
-            if not api_key:
-                load_dotenv()
-                api_key = os.getenv("ELASTIC_API_KEY")
-        except Exception as e:
-            print(f"Secret 로드 중 오류: {e}")  # 디버깅용
-            load_dotenv()
-            api_key = os.getenv("ELASTIC_API_KEY")
-
-        if not api_key:
-            raise ValueError("ELASTIC_API_KEY가 설정되지 않았습니다.")
 
         try:
             self.es = Elasticsearch(
                 "https://my-elasticsearch-project-e8b084.es.us-east-1.aws.elastic.cloud:443",
-                api_key=api_key,
+                api_key="eld0RmVKUUI5LUtzQm51ZlJ1Sy06TVdOREExV2dRWWlDdGgxTjZuSHFKZw==",
                 verify_certs=True,
             )
 
+            print("연결 테스트 중...")
             if not self.es.ping():
                 raise ConnectionError("Elasticsearch 서버에 연결할 수 없습니다.")
             print("Elastic Cloud 연결 성공!")
         except Exception as e:
-            print(f"Elasticsearch 연결 실패: {e}")
-            raise  # 연결 실패 시 예외를 다시 발생시킴
+            print(f"Elasticsearch 연결 실패: {str(e)}")
+            raise
 
     def create_es_index(self):
         """Elasticsearch 인덱스 생성"""

@@ -4,16 +4,6 @@ from datetime import datetime
 import pandas as pd
 from query_action import DatabaseSearch, ResponseGeneration, ResponseReview, NewsChatbot
 import os
-import streamlit as st
-
-# 만약 st.secrets를 사용한다면
-ELASTIC_API_KEY = st.secrets["ELASTIC_API_KEY"]
-
-if not ELASTIC_API_KEY:
-    st.error(
-        "ELASTIC_API_KEY가 설정되지 않았습니다. Streamlit Secrets 또는 환경 변수에 값을 설정해주세요."
-    )
-    st.stop()
 
 
 # 페이지 설정
