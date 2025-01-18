@@ -280,10 +280,19 @@ class ResponseGeneration:
 
     def __init__(self):
         # API 키 설정
-        load_dotenv()
-        api_key = os.getenv("GEMINI_API_KEY")
+        try:
+            # streamlit의 secrets에서 먼저 시도
+            api_key = st.secrets["GEMINI_API_KEY"]
+        except Exception:
+            # 실패하면 환경 변수에서 시도
+            from dotenv import load_dotenv
+
+            load_dotenv()
+            api_key = os.getenv("GEMINI_API_KEY")
+
         if not api_key:
             raise ValueError("GEMINI_API_KEY가 설정되지 않았습니다.")
+
         configure(api_key=api_key)
         self.model = GenerativeModel("gemini-2.0-flash-exp")
 
@@ -593,30 +602,3 @@ class NewsChatbot:
                 print(f"   URL: {article['url']}")
                 print(f"   발행일: {article.get('published_date', '날짜 정보 없음')}")
         print("")
-
-
-# async def main():
-#     """메인 실행 함수"""
-#     try:
-#         chatbot = NewsChatbot()
-#         await chatbot.run()
-#     except Exception as e:
-#         print(f"실행 중 오류 발생: {e}")
-#     finally:
-#         print("프로그램을 종료합니다.")
-
-
-# if __name__ == "__main__":
-#     try:
-#         # 데이터베이스 검색 객체 생성
-#         print("Elasticsearch 동기화를 시작합니다...")
-#         db_search = DatabaseSearch()
-
-#         # MongoDB에서 Elasticsearch로 데이터 동기화
-#         print("MongoDB의 데이터를 Elasticsearch로 동기화합니다...")
-#         db_search.sync_mongodb_to_elasticsearch()
-
-#         print("\n동기화가 완료되었습니다.")
-
-#     except Exception as e:
-#         print(f"오류 발생: {e}")
