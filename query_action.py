@@ -26,12 +26,19 @@ class DatabaseSearch:
 
         # Elasticsearch 연결 설정
         try:
-            self.es = Elasticsearch(["http://localhost:9200"])
+            api_key = os.getenv("ELASTIC_API_KEY")
+            self.es = Elasticsearch(
+                "https://my-elasticsearch-project-e8b084.es.us-east-1.aws.elastic.cloud:443",  # 클라우드 엔드포인트 URL
+                api_key=api_key,
+                verify_certs=True,
+            )
+
             if not self.es.ping():
                 raise ConnectionError("Elasticsearch 서버에 연결할 수 없습니다.")
+            print("Elastic Cloud 연결 성공!")
         except Exception as e:
             print(f"Elasticsearch 연결 실패: {e}")
-            raise
+            raise  # 연결 실패 시 예외를 다시 발생시킴
 
     def create_es_index(self):
         """Elasticsearch 인덱스 생성"""
