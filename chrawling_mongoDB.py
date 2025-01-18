@@ -286,7 +286,8 @@ if __name__ == "__main__":
     # MongoDB 연결 설정
     try:
         mongo_client = MongoClient(
-            "mongodb://localhost:27017/", serverSelectionTimeoutMS=5000
+            "mongodb+srv://clairetranslatorno1:qwFDNE011iRVTH1g@cluster0.guwrj.mongodb.net/crawlingdb",
+            serverSelectionTimeoutMS=5000,
         )
         mongo_client.server_info()  # 연결 테스트
         db = mongo_client["crawlingdb"]
