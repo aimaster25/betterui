@@ -286,7 +286,7 @@ def render_sidebar():
         with col1:
             st.markdown("### 검색 히스토리")
         with col2:
-            if st.button("대화 초기화"):
+            if st.button("대화 삭제"):
                 st.session_state.messages = []
                 st.session_state.search_history = []
                 st.session_state.article_history = []
