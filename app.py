@@ -205,13 +205,6 @@ class StreamlitChatbot:
 
         # 사용자 메시지 표시
         self.display_chat_message("user", user_input)
-
-        st.session_state.messages.append(
-            {"role": "user", "content": user_input}
-        )  # 수정된 코드
-
-        if "search_history" not in st.session_state:
-            st.session_state.search_history = set()
         st.session_state.search_history.add(user_input)
 
         # 처리 중 표시
@@ -224,28 +217,22 @@ class StreamlitChatbot:
                 )
 
                 status.update(label="답변을 생성하고 있습니다...")
-                st.session_state.messages.append(
-                    {
-                        "role": "assistant",
-                        "content": response,
-                        "articles": (
-                            [main_article] + related_articles if main_article else []
-                        ),
-                    }
-                )
-                # 응답 저장 및 표시
-                st.session_state.chat_history.append(
-                    (
-                        "assistant",
-                        response,
-                        [main_article] + related_articles if main_article else [],
-                    )
-                )
+                # 응답 저장 및 표시 - 기존 display_chat_message 메서드 사용
                 self.display_chat_message(
                     "assistant",
                     response,
                     [main_article] + related_articles if main_article else None,
                 )
+
+                # 기사 히스토리 업데이트
+                if main_article:
+                    st.session_state.article_history.append(main_article)
+
+                status.update(label="완료!", state="complete")
+
+            except Exception as e:
+                st.error(f"오류가 발생했습니다: {str(e)}")
+                status.update(label="오류 발생", state="error")
 
                 # 기사 히스토리 업데이트
                 if main_article:
