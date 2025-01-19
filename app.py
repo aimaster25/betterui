@@ -35,18 +35,6 @@ st.markdown(
         background-color: #f7f7f8;
     }
     
-    # /* 사이드바 버튼 스타일링 */
-    # .sidebar-button {
-    #     background-color: transparent;
-    #     border: none;
-    #     padding: 0.5rem;
-    #     cursor: pointer;
-    #     display: flex;
-    #     align-items: center;
-    #     width: 100%;
-    #     color: #1e1e1e;
-    # }
-    
     /* 채팅 기록 스타일링 */
     .chat-history-item {
         padding: 0.5rem;
@@ -293,17 +281,6 @@ class StreamlitChatbot:
 def render_sidebar():
     """사이드바 렌더링"""
     with st.sidebar:
-        # # 아이콘 영역
-        # st.markdown(
-        #     """
-        #     <div style='display: flex; gap: 1rem; margin-bottom: 1rem;'>
-        #         <span title="Close Sidebar" style="font-size:1.3rem; cursor:pointer;">🗙</span>
-        #         <span title="Search Chats" style="font-size:1.3rem; cursor:pointer;">🔎</span>
-        #         <span title="New Chat" style="font-size:1.3rem; cursor:pointer;">📝</span>
-        #     </div>
-        #     """,
-        #     unsafe_allow_html=True,
-        # )
 
         # [대화 내용 초기화] 버튼
         if st.button("대화 내용 초기화"):
