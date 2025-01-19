@@ -286,6 +286,14 @@ def render_sidebar():
         st.markdown("### 검색 히스토리")
         for i, item in enumerate(st.session_state.search_history):
             q = item["question"]
+            # [대화 내용 초기화] 버튼
+            if st.button("대화 내용 초기화"):
+                st.session_state.messages = []
+                st.session_state.search_history = []
+                st.session_state.article_history = []
+                st.session_state.selected_chat = None
+                st.experimental_rerun()
+
             if st.button(q if q else "무제", key=f"search_history_{i}"):
                 # 클릭 시 선택된 채팅으로 저장 -> 답변 및 기사 목록까지 함께 보여주기
                 st.session_state.selected_chat = {
@@ -293,13 +301,6 @@ def render_sidebar():
                     "response": item["answer"],
                     "articles": item["articles"],  # ← 관련 기사 목록까지 복원
                 }
-        # [대화 내용 초기화] 버튼
-        if st.button("대화 내용 초기화"):
-            st.session_state.messages = []
-            st.session_state.search_history = []
-            st.session_state.article_history = []
-            st.session_state.selected_chat = None
-            st.experimental_rerun()
 
 
 def main():
