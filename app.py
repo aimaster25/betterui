@@ -82,7 +82,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-
 class StreamlitChatbot:
     def __init__(self):
         # 세션 상태 초기화
@@ -121,64 +120,17 @@ class StreamlitChatbot:
         if "search_query" not in st.session_state:
             st.session_state.search_query = ""
 
-    @staticmethod
-    def categorize_chats():
-        """채팅을 날짜별로 분류"""
-        today = datetime.now().date()
-        yesterday = today - timedelta(days=1)
-        week_ago = today - timedelta(days=7)
-
-        # 실제 애플리케이션에서는 데이터베이스에서 가져올 수 있음
-        sample_chats = [
-            {
-                "id": 1,
-                "date": today,
-                "question": "",
-                "response": "",
-            },
-            {
-                "id": 2,
-                "date": yesterday,
-                "question": "",
-                "response": "",
-            },
-            {
-                "id": 3,
-                "date": week_ago,
-                "question": "",
-                "response": "",
-            },
-        ]
-
-        return sample_chats
-
-    def display_article_info(self, article, score=None):
-        """기사 정보 표시"""
-        with st.container():
-            st.markdown(
-                f"""
-                <div class="article-card">
-                    <h4>📰 {article['title']}</h4>
-                    <p><b>발행일:</b> {article.get('published_date', '날짜 정보 없음')}</p>
-                    {f'<p><b>관련도:</b> {score:.2f}%</p>' if score else ''}
-                    <p><b>🔗 기사 링크:</b> <a href="{article['url']}" target="_blank">{article['url']}</a></p>
-                    <p><b>카테고리:</b> {', '.join(article.get('categories', ['미분류']))}</p>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
     def display_chat_message(self, role, content, articles=None):
         """채팅 메시지 표시"""
         with st.chat_message(role):
             st.markdown(content)
 
+            # 기사 정보 표시
             if articles and role == "assistant" and isinstance(articles, list):
                 st.markdown("### 📚 관련 기사")
 
                 for i in range(0, min(len(articles), 4), 2):
                     col1, col2 = st.columns(2)
-
                     # 첫 번째 열
                     with col1:
                         if i < len(articles) and isinstance(articles[i], dict):
@@ -191,7 +143,6 @@ class StreamlitChatbot:
                         - 📊 카테고리: {', '.join(article.get('categories', ['미분류']))}
                         """
                             )
-
                     # 두 번째 열
                     with col2:
                         if i + 1 < len(articles) and isinstance(articles[i + 1], dict):
@@ -234,7 +185,7 @@ class StreamlitChatbot:
                 if main_article:
                     st.session_state.article_history.append(main_article)
 
-                # ★ 질문/답변을 search_history에 저장(클릭 시 해당 내용 복원하기 위함)
+                # 검색 히스토리에 질문/답변 저장
                 st.session_state.search_history.append(
                     {"question": user_input, "answer": response}
                 )
@@ -247,7 +198,7 @@ class StreamlitChatbot:
 
     def show_analytics(self):
         """분석 정보 표시"""
-        if st.session_state.article_history:  # 기사 히스토리가 있는 경우만 표시
+        if st.session_state.article_history:
             st.header("📊 검색 분석")
 
             # 1. 카테고리 분포 분석
@@ -270,7 +221,6 @@ class StreamlitChatbot:
 
             # 분석 결과 표시
             col1, col2 = st.columns(2)
-
             with col1:
                 st.subheader("📈 카테고리별 기사 분포")
                 if not category_counts.empty:
@@ -295,18 +245,12 @@ class StreamlitChatbot:
             # 3. 검색 통계
             st.subheader("🔍 검색 통계")
             col3, col4, col5 = st.columns(3)
-
             with col3:
-                st.metric(
-                    label="총 검색 수", value=len(st.session_state.search_history)
-                )
-
+                st.metric(label="총 검색 수", value=len(st.session_state.search_history))
             with col4:
                 st.metric(
-                    label="검색된 총 기사 수",
-                    value=len(st.session_state.article_history),
+                    label="검색된 총 기사 수", value=len(st.session_state.article_history)
                 )
-
             with col5:
                 if st.session_state.article_history:
                     latest_article = max(
@@ -322,19 +266,30 @@ class StreamlitChatbot:
                         ).strftime("%Y-%m-%d"),
                     )
 
-            # 4. 최근 검색어 히스토리 (질문만 표시)
+            # 4. 최근 검색어 히스토리
             if st.session_state.search_history:
                 st.subheader("🕒 최근 검색어")
-                recent_searches = st.session_state.search_history[-5:]  # 최근 5개
+                recent_searches = st.session_state.search_history[-5:]
                 for item in reversed(recent_searches):
                     st.text(f"• {item['question']}")
         else:
             st.info("아직 검색 결과가 없습니다. 질문을 입력해주세요!")
 
-
-def render_sidebar(chats):
-    """사이드바 렌더링"""
+def render_sidebar():
+    """사이드바 렌더링 (Today, Yesterday, Previous 7 Days 삭제)"""
     with st.sidebar:
+        # 아이콘 영역
+        st.markdown(
+            """
+            <div style='display: flex; gap: 1rem; margin-bottom: 1rem;'>
+                <span title="Close Sidebar" style="font-size:1.3rem; cursor:pointer;">🗙</span>
+                <span title="Search Chats" style="font-size:1.3rem; cursor:pointer;">🔎</span>
+                <span title="New Chat" style="font-size:1.3rem; cursor:pointer;">📝</span>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
         # [대화 내용 초기화] 버튼
         if st.button("대화 내용 초기화"):
             st.session_state.messages = []
@@ -342,38 +297,6 @@ def render_sidebar(chats):
             st.session_state.article_history = []
             st.session_state.selected_chat = None
             st.experimental_rerun()
-
-        # 날짜별 채팅 기록
-        st.markdown("### Today")
-        for chat in [c for c in chats if c["date"] == datetime.now().date()]:
-            if st.button(
-                chat["question"] or "예시 질문 (빈 값)",
-                key=f"chat_{chat['id']}",
-                help=chat["date"].strftime("%Y-%m-%d"),
-            ):
-                st.session_state.selected_chat = chat
-
-        st.markdown("### Yesterday")
-        for chat in [
-            c for c in chats if c["date"] == (datetime.now().date() - timedelta(days=1))
-        ]:
-            if st.button(
-                chat["question"] or "예시 질문 (빈 값)",
-                key=f"chat_{chat['id']}",
-                help=chat["date"].strftime("%Y-%m-%d"),
-            ):
-                st.session_state.selected_chat = chat
-
-        st.markdown("### Previous 7 Days")
-        for chat in [
-            c for c in chats if c["date"] < (datetime.now().date() - timedelta(days=1))
-        ]:
-            if st.button(
-                chat["question"] or "예시 질문 (빈 값)",
-                key=f"chat_{chat['id']}",
-                help=chat["date"].strftime("%Y-%m-%d"),
-            ):
-                st.session_state.selected_chat = chat
 
         # 검색 히스토리 목록
         st.markdown("### 검색 히스토리")
@@ -385,24 +308,19 @@ def render_sidebar(chats):
                     "response": item["answer"],
                 }
 
-
 def main():
     app = StreamlitChatbot()
     app.init_session()
 
-    # Elastic Cloud 연결 성공! 위에 모델 선택 박스 배치
-    st.markdown("## AI 뉴스에 대해 무엇이든 물어보세요")
-    # AI 모델 선택 드롭다운 (사이드바 -> 메인 영역으로 이동)
-    st.selectbox("AI 모델 선택", ["Gemini", "GPT-4", "BERT"], key="current_model")
-
     # 상단 안내
+    st.markdown("## AI 뉴스에 대해 무엇이든 물어보세요")
+    st.selectbox("AI 모델 선택", ["Gemini", "GPT-4", "BERT"], key="current_model")
     st.write("어떤 뉴스를 알고 싶으세요?")
 
-    # 채팅 분류
-    chats = app.categorize_chats()
-    render_sidebar(chats)
+    # 사이드바 출력 (Today/Yesterday/Previous 7 Days 부분 삭제됨)
+    render_sidebar()
 
-    # 이미 선택된 채팅이 있다면 해당 질문/답변 표시
+    # 선택된 대화가 있다면 표시
     if st.session_state.selected_chat:
         st.markdown(f"**Question:** {st.session_state.selected_chat['question']}")
         st.markdown(f"**Response:** {st.session_state.selected_chat['response']}")
