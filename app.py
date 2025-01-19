@@ -85,13 +85,6 @@ st.markdown(
 
 class StreamlitChatbot:
     def __init__(self):
-        # 세션 상태 초기화
-        if "chat_history" not in st.session_state:
-            st.session_state.chat_history = {
-                "today": [],
-                "yesterday": [],
-                "previous_7_days": [],
-            }
         # 현재 모델
         if "current_model" not in st.session_state:
             st.session_state.current_model = "Gemini"
@@ -120,37 +113,6 @@ class StreamlitChatbot:
             st.session_state.messages = []
         if "search_query" not in st.session_state:
             st.session_state.search_query = ""
-
-    @staticmethod
-    def categorize_chats():
-        """채팅을 날짜별로 분류"""
-        today = datetime.now().date()
-        yesterday = today - timedelta(days=1)
-        week_ago = today - timedelta(days=7)
-
-        # 실제 애플리케이션에서는 데이터베이스에서 가져올 수 있음
-        sample_chats = [
-            {
-                "id": 1,
-                "date": today,
-                "question": "",
-                "response": "",
-            },
-            {
-                "id": 2,
-                "date": yesterday,
-                "question": "",
-                "response": "",
-            },
-            {
-                "id": 3,
-                "date": week_ago,
-                "question": "",
-                "response": "",
-            },
-        ]
-
-        return sample_chats
 
     def display_article_info(self, article, score=None):
         """기사 정보 표시"""
@@ -336,44 +298,12 @@ def render_sidebar(chats):
     """사이드바 렌더링"""
     with st.sidebar:
         # [대화 내용 초기화] 버튼
-        if st.button("[대화 내용 초기화]"):
+        if st.button("대화 내용 초기화"):
             st.session_state.messages = []
             st.session_state.search_history = []
             st.session_state.article_history = []
             st.session_state.selected_chat = None
             st.experimental_rerun()
-
-        # 날짜별 채팅 기록
-        st.markdown("### Today")
-        for chat in [c for c in chats if c["date"] == datetime.now().date()]:
-            if st.button(
-                chat["question"] or "예시 질문 (빈 값)",
-                key=f"chat_{chat['id']}",
-                help=chat["date"].strftime("%Y-%m-%d"),
-            ):
-                st.session_state.selected_chat = chat
-
-        st.markdown("### Yesterday")
-        for chat in [
-            c for c in chats if c["date"] == (datetime.now().date() - timedelta(days=1))
-        ]:
-            if st.button(
-                chat["question"] or "예시 질문 (빈 값)",
-                key=f"chat_{chat['id']}",
-                help=chat["date"].strftime("%Y-%m-%d"),
-            ):
-                st.session_state.selected_chat = chat
-
-        st.markdown("### Previous 7 Days")
-        for chat in [
-            c for c in chats if c["date"] < (datetime.now().date() - timedelta(days=1))
-        ]:
-            if st.button(
-                chat["question"] or "예시 질문 (빈 값)",
-                key=f"chat_{chat['id']}",
-                help=chat["date"].strftime("%Y-%m-%d"),
-            ):
-                st.session_state.selected_chat = chat
 
         # 검색 히스토리 목록
         st.markdown("### 검색 히스토리")
@@ -391,12 +321,12 @@ def main():
     app.init_session()
 
     # Elastic Cloud 연결 성공! 위에 모델 선택 박스 배치
-    st.markdown("## Elastic Cloud 연결 성공!")
+    st.markdown("## AI 뉴스에 대해 무엇이든 물어보세요")
     # AI 모델 선택 드롭다운 (사이드바 -> 메인 영역으로 이동)
     st.selectbox("AI 모델 선택", ["Gemini", "GPT-4", "BERT"], key="current_model")
 
     # 상단 안내
-    st.write("새로운 대화를 시작하세요!")
+    st.write("어떤 뉴스를 알고 싶으세요?")
 
     # 채팅 분류
     chats = app.categorize_chats()
