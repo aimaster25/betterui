@@ -279,15 +279,22 @@ class ResponseGeneration:
     """초기 답변 생성을 담당하는 클래스"""
 
     def __init__(self):
-        # API 키를 직접 설정
-        api_key = "AIzaSyAzYqKsFxnLKfz_binMmGzr_M-SWrQA3Gk"
-        if not api_key:
-            raise ValueError("GEMINI_API_KEY가 설정되지 않았습니다.")
-        configure(api_key=api_key)
-        self.model = GenerativeModel("gemini-2.0-flash-exp")
+        try:
+            # Streamlit secrets의 API 키를 환경 변수로 설정
+            os.environ["GEMINI_API_KEY"] = st.secrets["GEMINI_API_KEY"]
 
-        configure(api_key=api_key)
-        self.model = GenerativeModel("gemini-2.0-flash-exp")
+            # 환경 변수에서 API 키 가져오기
+            api_key = os.getenv("GEMINI_API_KEY")
+
+            if not api_key:
+                raise ValueError("GEMINI_API_KEY가 설정되지 않았습니다.")
+
+            configure(api_key=api_key)
+            self.model = GenerativeModel("gemini-2.0-flash-exp")
+
+        except Exception as e:
+            st.error(f"API 키 로드 중 오류 발생: {e}")
+            raise
 
     async def find_relevant_article(self, query, articles):
         """관련 기사 찾기"""
