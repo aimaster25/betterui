@@ -341,12 +341,6 @@ def main():
     if user_input:
         asyncio.run(app.process_user_input(user_input))
 
-    # (옵션) 지금까지의 대화 메시지 표시
-    # 만약 "검색 히스토리"가 아닌, 매 실시간 입력에 대해서도 누적 기록을 보고 싶다면:
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.write(message["content"])
-
 
 if __name__ == "__main__":
     main()
