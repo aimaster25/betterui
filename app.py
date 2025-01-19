@@ -105,7 +105,7 @@ class StreamlitChatbot:
         if "search_query" not in st.session_state:
             st.session_state.search_query = ""
         # 검색 히스토리를 질문/답변 형식으로 저장
-        if "search_history" not in st.session_state:  
+        if "search_history" not in st.session_state:
             st.session_state.search_history = []
         # 기사 히스토리
         if "article_history" not in st.session_state:
@@ -235,10 +235,9 @@ class StreamlitChatbot:
                     st.session_state.article_history.append(main_article)
 
                 # ★ 질문/답변을 search_history에 저장(클릭 시 해당 내용 복원하기 위함)
-                st.session_state.search_history.append({
-                    "question": user_input,
-                    "answer": response
-                })
+                st.session_state.search_history.append(
+                    {"question": user_input, "answer": response}
+                )
 
                 status.update(label="완료!", state="complete")
 
@@ -317,7 +316,9 @@ class StreamlitChatbot:
                     st.metric(
                         label="최신 기사 날짜",
                         value=datetime.fromisoformat(
-                            latest_article.get("published_date", datetime.now().isoformat())
+                            latest_article.get(
+                                "published_date", datetime.now().isoformat()
+                            )
                         ).strftime("%Y-%m-%d"),
                     )
 
@@ -335,7 +336,7 @@ def render_sidebar(chats):
     """사이드바 렌더링"""
     with st.sidebar:
         # [대화 내용 초기화] 버튼
-        if st.button("[대화 내용 초기화]"):
+        if st.button("대화 내용 초기화"):
             st.session_state.messages = []
             st.session_state.search_history = []
             st.session_state.article_history = []

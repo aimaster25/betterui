@@ -36,7 +36,7 @@ class DatabaseSearch:
             if not self.es.ping():
                 st.error("Elasticsearch 서버에 연결할 수 없습니다.")
                 raise ConnectionError("Elasticsearch 서버에 연결할 수 없습니다.")
-            st.success("Elastic Cloud 연결 성공!")
+            # st.success("Elastic Cloud 연결 성공!")
 
         except Exception as e:
             st.error(f"Elasticsearch 연결 실패: {e}")
