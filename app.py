@@ -82,6 +82,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+
 class StreamlitChatbot:
     def __init__(self):
         # 세션 상태 초기화
@@ -103,7 +104,7 @@ class StreamlitChatbot:
         # 검색어
         if "search_query" not in st.session_state:
             st.session_state.search_query = ""
-        # 검색 히스토리를 질문/답변 형식으로 저장
+        # 검색 히스토리를 질문/답변/기사 형식으로 저장
         if "search_history" not in st.session_state:
             st.session_state.search_history = []
         # 기사 히스토리
@@ -121,12 +122,19 @@ class StreamlitChatbot:
             st.session_state.search_query = ""
 
     def display_chat_message(self, role, content, articles=None):
-        """채팅 메시지 표시"""
+        """
+        채팅 메시지 표시.
+        articles가 있으면 "관련 기사" 섹션도 함께 표시
+        """
         with st.chat_message(role):
             st.markdown(content)
 
-            # 기사 정보 표시
-            if articles and role == "assistant" and isinstance(articles, list):
+            if (
+                articles
+                and role == "assistant"
+                and isinstance(articles, list)
+                and len(articles) > 0
+            ):
                 st.markdown("### 📚 관련 기사")
 
                 for i in range(0, min(len(articles), 4), 2):
@@ -137,11 +145,11 @@ class StreamlitChatbot:
                             article = articles[i]
                             st.markdown(
                                 f"""
-                        #### {i+1}. {article.get('title', '제목 없음')}
-                        - 📅 발행일: {article.get('published_date', '날짜 정보 없음')}
-                        - 🔗 [기사 링크]({article.get('url', '#')})
-                        - 📊 카테고리: {', '.join(article.get('categories', ['미분류']))}
-                        """
+                            #### {i+1}. {article.get('title', '제목 없음')}
+                            - 📅 발행일: {article.get('published_date', '날짜 정보 없음')}
+                            - 🔗 [기사 링크]({article.get('url', '#')})
+                            - 📊 카테고리: {', '.join(article.get('categories', ['미분류']))}
+                            """
                             )
                     # 두 번째 열
                     with col2:
@@ -149,11 +157,11 @@ class StreamlitChatbot:
                             article = articles[i + 1]
                             st.markdown(
                                 f"""
-                        #### {i+2}. {article.get('title', '제목 없음')}
-                        - 📅 발행일: {article.get('published_date', '날짜 정보 없음')}
-                        - 🔗 [기사 링크]({article.get('url', '#')})
-                        - 📊 카테고리: {', '.join(article.get('categories', ['미분류']))}
-                        """
+                            #### {i+2}. {article.get('title', '제목 없음')}
+                            - 📅 발행일: {article.get('published_date', '날짜 정보 없음')}
+                            - 🔗 [기사 링크]({article.get('url', '#')})
+                            - 📊 카테고리: {', '.join(article.get('categories', ['미분류']))}
+                            """
                             )
 
     async def process_user_input(self, user_input):
@@ -174,20 +182,23 @@ class StreamlitChatbot:
                 )
 
                 status.update(label="답변을 생성하고 있습니다...")
-                # 답변 메시지 표시
-                self.display_chat_message(
-                    "assistant",
-                    response,
-                    [main_article] + related_articles if main_article else None,
+                # 답변 메시지 표시 (메인 기사 + 관련 기사)
+                combined_articles = (
+                    [main_article] + related_articles if main_article else []
                 )
+                self.display_chat_message("assistant", response, combined_articles)
 
                 # 기사 히스토리 업데이트
                 if main_article:
                     st.session_state.article_history.append(main_article)
 
-                # 검색 히스토리에 질문/답변 저장
+                # 검색 히스토리에 질문/답변/기사 저장
                 st.session_state.search_history.append(
-                    {"question": user_input, "answer": response}
+                    {
+                        "question": user_input,
+                        "answer": response,
+                        "articles": combined_articles,  # 주요 기사 + 관련 기사
+                    }
                 )
 
                 status.update(label="완료!", state="complete")
@@ -246,10 +257,13 @@ class StreamlitChatbot:
             st.subheader("🔍 검색 통계")
             col3, col4, col5 = st.columns(3)
             with col3:
-                st.metric(label="총 검색 수", value=len(st.session_state.search_history))
+                st.metric(
+                    label="총 검색 수", value=len(st.session_state.search_history)
+                )
             with col4:
                 st.metric(
-                    label="검색된 총 기사 수", value=len(st.session_state.article_history)
+                    label="검색된 총 기사 수",
+                    value=len(st.session_state.article_history),
                 )
             with col5:
                 if st.session_state.article_history:
@@ -275,8 +289,9 @@ class StreamlitChatbot:
         else:
             st.info("아직 검색 결과가 없습니다. 질문을 입력해주세요!")
 
+
 def render_sidebar():
-    """사이드바 렌더링 (Today, Yesterday, Previous 7 Days 삭제)"""
+    """사이드바 렌더링"""
     with st.sidebar:
         # 아이콘 영역
         st.markdown(
@@ -287,7 +302,7 @@ def render_sidebar():
                 <span title="New Chat" style="font-size:1.3rem; cursor:pointer;">📝</span>
             </div>
             """,
-            unsafe_allow_html=True
+            unsafe_allow_html=True,
         )
 
         # [대화 내용 초기화] 버튼
@@ -303,36 +318,45 @@ def render_sidebar():
         for i, item in enumerate(st.session_state.search_history):
             q = item["question"]
             if st.button(q if q else "무제", key=f"search_history_{i}"):
+                # 클릭 시 선택된 채팅으로 저장 -> 답변 및 기사 목록까지 함께 보여주기
                 st.session_state.selected_chat = {
                     "question": item["question"],
                     "response": item["answer"],
+                    "articles": item["articles"],  # ← 관련 기사 목록까지 복원
                 }
+
 
 def main():
     app = StreamlitChatbot()
     app.init_session()
 
-    # 상단 안내
     st.markdown("## AI 뉴스에 대해 무엇이든 물어보세요")
     st.selectbox("AI 모델 선택", ["Gemini", "GPT-4", "BERT"], key="current_model")
     st.write("어떤 뉴스를 알고 싶으세요?")
 
-    # 사이드바 출력 (Today/Yesterday/Previous 7 Days 부분 삭제됨)
+    # 사이드바 출력
     render_sidebar()
 
-    # 선택된 대화가 있다면 표시
+    # 만약 selected_chat이 있으면, 해당 검색(질문+답변+기사) 복원
     if st.session_state.selected_chat:
-        st.markdown(f"**Question:** {st.session_state.selected_chat['question']}")
-        st.markdown(f"**Response:** {st.session_state.selected_chat['response']}")
+        # 유저가 했던 질문 복원
+        app.display_chat_message("user", st.session_state.selected_chat["question"])
+        # 당시 챗봇 답변 + 기사 목록 복원
+        app.display_chat_message(
+            "assistant",
+            st.session_state.selected_chat["response"],
+            st.session_state.selected_chat["articles"],
+        )
     else:
         st.markdown("")
 
-    # 채팅 입력
+    # 사용자 새 입력 처리
     user_input = st.chat_input("메시지를 입력하세요...")
     if user_input:
         asyncio.run(app.process_user_input(user_input))
 
-    # 대화 표시 (사용자가 입력한 메시지들)
+    # (옵션) 지금까지의 대화 메시지 표시
+    # 만약 "검색 히스토리"가 아닌, 매 실시간 입력에 대해서도 누적 기록을 보고 싶다면:
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.write(message["content"])
