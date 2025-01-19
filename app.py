@@ -282,14 +282,6 @@ def render_sidebar():
     """사이드바 렌더링"""
     with st.sidebar:
 
-        # [대화 내용 초기화] 버튼
-        if st.button("대화 내용 초기화"):
-            st.session_state.messages = []
-            st.session_state.search_history = []
-            st.session_state.article_history = []
-            st.session_state.selected_chat = None
-            st.experimental_rerun()
-
         # 검색 히스토리 목록
         st.markdown("### 검색 히스토리")
         for i, item in enumerate(st.session_state.search_history):
@@ -301,6 +293,13 @@ def render_sidebar():
                     "response": item["answer"],
                     "articles": item["articles"],  # ← 관련 기사 목록까지 복원
                 }
+        # [대화 내용 초기화] 버튼
+        if st.button("대화 내용 초기화"):
+            st.session_state.messages = []
+            st.session_state.search_history = []
+            st.session_state.article_history = []
+            st.session_state.selected_chat = None
+            st.experimental_rerun()
 
 
 def main():
