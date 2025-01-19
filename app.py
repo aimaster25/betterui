@@ -153,43 +153,61 @@ class StreamlitChatbot:
                             )
 
     async def process_user_input(self, user_input):
-        """사용자 입력 처리"""
         if not user_input:
             return
 
         # 사용자 메시지 표시
         self.display_chat_message("user", user_input)
 
-        # 처리 중 표시
         with st.status("AI가 답변을 생성하고 있습니다...") as status:
             try:
-                # 관련 기사 검색 + 답변 생성
-                status.update(label="관련 기사를 검색중입니다...")
                 main_article, related_articles, score, response = (
                     await st.session_state.chatbot.process_query(user_input)
                 )
 
-                status.update(label="답변을 생성하고 있습니다...")
-                # 답변 메시지 표시 (메인 기사 + 관련 기사)
+                # -- "개선된 답변", "개선 사항", "개선점" 부분 제거 로직 --
+                lines = response.splitlines()
+                filtered_lines = []
+                skip_remaining = False
+
+                for line in lines:
+                    # 1) 만약 "개선된 답변"이 포함된 줄 → 해당 줄만 건너뛰기
+                    if "개선된 답변" in line:
+                        continue
+
+                    # -- "개선된 답변", "개선 사항", "개선점" 부분 제거 로직 --
+                    if ("개선 사항" in line) or ("개선점" in line):
+                        skip_remaining = True
+
+                    # skip_remaining이 False일 때만 필터링 목록에 추가
+                    if not skip_remaining:
+                        filtered_lines.append(line)
+
+                cleaned_response = "\n".join(filtered_lines)
+                # ---------------------------------------------
+
+                # 답변 메시지 표시
                 combined_articles = (
                     [main_article] + related_articles if main_article else []
                 )
-                self.display_chat_message("assistant", response, combined_articles)
+                self.display_chat_message(
+                    "assistant", cleaned_response, combined_articles
+                )
 
                 # 기사 히스토리 업데이트
                 if main_article:
                     st.session_state.article_history.append(main_article)
 
-                # 검색 히스토리에 질문/답변/기사 저장
-                st.session_state.search_history.append(
-                    {
-                        "question": user_input,
-                        "answer": response,
-                        "articles": combined_articles,  # 주요 기사 + 관련 기사
-                    }
-                )
+                    # 검색 히스토리 저장
+                    st.session_state.search_history.append(
+                        {
+                            "question": user_input,
+                            "answer": cleaned_response,
+                            "articles": combined_articles,
+                        }
+                    )
 
-                status.update(label="완료!", state="complete")
+                    status.update(label="완료!", state="complete")
 
             except Exception as e:
                 st.error(f"오류가 발생했습니다: {str(e)}")
