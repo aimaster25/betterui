@@ -101,10 +101,13 @@ class StreamlitChatbot:
             st.session_state.messages = []
         if "search_query" not in st.session_state:
             st.session_state.search_query = ""
-
+        if "search_history" not in st.session_state:  # 추가
+            st.session_state.search_history = set()  # 추가
+        if "article_history" not in st.session_state:  # 추가
+            st.session_state.article_history = []  # 추가
         # chatbot 초기화 추가
         if "chatbot" not in st.session_state:
-            st.session_state.chatbot = NewsChatbot()  # NewsChatbot 인스턴스 생성
+            st.session_state.chatbot = NewsChatbot()
 
     @staticmethod
     def init_session():
