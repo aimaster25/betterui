@@ -85,6 +85,13 @@ st.markdown(
 
 class StreamlitChatbot:
     def __init__(self):
+        # 세션 상태 초기화
+        if "chat_history" not in st.session_state:
+            st.session_state.chat_history = {
+                "today": [],
+                "yesterday": [],
+                "previous_7_days": [],
+            }
         # 현재 모델
         if "current_model" not in st.session_state:
             st.session_state.current_model = "Gemini"
@@ -98,7 +105,7 @@ class StreamlitChatbot:
         if "search_query" not in st.session_state:
             st.session_state.search_query = ""
         # 검색 히스토리를 질문/답변 형식으로 저장
-        if "search_history" not in st.session_state:
+        if "search_history" not in st.session_state:  
             st.session_state.search_history = []
         # 기사 히스토리
         if "article_history" not in st.session_state:
@@ -113,6 +120,37 @@ class StreamlitChatbot:
             st.session_state.messages = []
         if "search_query" not in st.session_state:
             st.session_state.search_query = ""
+
+    @staticmethod
+    def categorize_chats():
+        """채팅을 날짜별로 분류"""
+        today = datetime.now().date()
+        yesterday = today - timedelta(days=1)
+        week_ago = today - timedelta(days=7)
+
+        # 실제 애플리케이션에서는 데이터베이스에서 가져올 수 있음
+        sample_chats = [
+            {
+                "id": 1,
+                "date": today,
+                "question": "",
+                "response": "",
+            },
+            {
+                "id": 2,
+                "date": yesterday,
+                "question": "",
+                "response": "",
+            },
+            {
+                "id": 3,
+                "date": week_ago,
+                "question": "",
+                "response": "",
+            },
+        ]
+
+        return sample_chats
 
     def display_article_info(self, article, score=None):
         """기사 정보 표시"""
@@ -197,9 +235,10 @@ class StreamlitChatbot:
                     st.session_state.article_history.append(main_article)
 
                 # ★ 질문/답변을 search_history에 저장(클릭 시 해당 내용 복원하기 위함)
-                st.session_state.search_history.append(
-                    {"question": user_input, "answer": response}
-                )
+                st.session_state.search_history.append({
+                    "question": user_input,
+                    "answer": response
+                })
 
                 status.update(label="완료!", state="complete")
 
@@ -278,9 +317,7 @@ class StreamlitChatbot:
                     st.metric(
                         label="최신 기사 날짜",
                         value=datetime.fromisoformat(
-                            latest_article.get(
-                                "published_date", datetime.now().isoformat()
-                            )
+                            latest_article.get("published_date", datetime.now().isoformat())
                         ).strftime("%Y-%m-%d"),
                     )
 
@@ -298,12 +335,44 @@ def render_sidebar(chats):
     """사이드바 렌더링"""
     with st.sidebar:
         # [대화 내용 초기화] 버튼
-        if st.button("대화 내용 초기화"):
+        if st.button("[대화 내용 초기화]"):
             st.session_state.messages = []
             st.session_state.search_history = []
             st.session_state.article_history = []
             st.session_state.selected_chat = None
             st.experimental_rerun()
+
+        # 날짜별 채팅 기록
+        st.markdown("### Today")
+        for chat in [c for c in chats if c["date"] == datetime.now().date()]:
+            if st.button(
+                chat["question"] or "예시 질문 (빈 값)",
+                key=f"chat_{chat['id']}",
+                help=chat["date"].strftime("%Y-%m-%d"),
+            ):
+                st.session_state.selected_chat = chat
+
+        st.markdown("### Yesterday")
+        for chat in [
+            c for c in chats if c["date"] == (datetime.now().date() - timedelta(days=1))
+        ]:
+            if st.button(
+                chat["question"] or "예시 질문 (빈 값)",
+                key=f"chat_{chat['id']}",
+                help=chat["date"].strftime("%Y-%m-%d"),
+            ):
+                st.session_state.selected_chat = chat
+
+        st.markdown("### Previous 7 Days")
+        for chat in [
+            c for c in chats if c["date"] < (datetime.now().date() - timedelta(days=1))
+        ]:
+            if st.button(
+                chat["question"] or "예시 질문 (빈 값)",
+                key=f"chat_{chat['id']}",
+                help=chat["date"].strftime("%Y-%m-%d"),
+            ):
+                st.session_state.selected_chat = chat
 
         # 검색 히스토리 목록
         st.markdown("### 검색 히스토리")
