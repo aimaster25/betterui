@@ -307,9 +307,17 @@ def main():
     app = StreamlitChatbot()
     app.init_session()
 
-    st.markdown("## AI 뉴스에 대해 무엇이든 물어보세요")
-    st.selectbox("AI 모델 선택", ["Gemini", "GPT-4", "BERT"], key="current_model")
-    st.write("어떤 뉴스를 알고 싶으세요?")
+    st.markdown(
+        """
+    ### 👋 안녕하세요! AI 뉴스 챗봇입니다.
+    뉴스 기사에 대해 궁금한 점을 자유롭게 물어보세요. 관련 기사를 찾아 답변해드립니다.
+    
+    **예시 질문:**
+    - "최근 AI 기술 동향이 궁금해요"
+    - "스타트업 투자 현황에 대해 알려주세요"
+    - "새로운 AI 서비스에는 어떤 것들이 있나요?"
+    """
+    )
 
     # 사이드바 출력
     render_sidebar()
