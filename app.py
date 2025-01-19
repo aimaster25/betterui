@@ -5,7 +5,6 @@ import pandas as pd
 from query_action import DatabaseSearch, ResponseGeneration, ResponseReview, NewsChatbot
 import os
 
-
 # 페이지 설정
 st.set_page_config(
     page_title="AI Chat",
@@ -93,19 +92,25 @@ class StreamlitChatbot:
                 "yesterday": [],
                 "previous_7_days": [],
             }
+        # 현재 모델
         if "current_model" not in st.session_state:
             st.session_state.current_model = "Gemini"
+        # 현재 선택된 채팅
         if "selected_chat" not in st.session_state:
             st.session_state.selected_chat = None
+        # 전체 대화 메시지
         if "messages" not in st.session_state:
             st.session_state.messages = []
+        # 검색어
         if "search_query" not in st.session_state:
             st.session_state.search_query = ""
-        if "search_history" not in st.session_state:  # 추가
-            st.session_state.search_history = set()  # 추가
-        if "article_history" not in st.session_state:  # 추가
-            st.session_state.article_history = []  # 추가
-        # chatbot 초기화 추가
+        # 검색 히스토리를 질문/답변 형식으로 저장
+        if "search_history" not in st.session_state:
+            st.session_state.search_history = []
+        # 기사 히스토리
+        if "article_history" not in st.session_state:
+            st.session_state.article_history = []
+        # chatbot 초기화
         if "chatbot" not in st.session_state:
             st.session_state.chatbot = NewsChatbot()
 
@@ -129,16 +134,19 @@ class StreamlitChatbot:
                 "id": 1,
                 "date": today,
                 "question": "",
+                "response": "",
             },
             {
                 "id": 2,
                 "date": yesterday,
                 "question": "",
+                "response": "",
             },
             {
                 "id": 3,
                 "date": week_ago,
                 "question": "",
+                "response": "",
             },
         ]
 
@@ -168,7 +176,6 @@ class StreamlitChatbot:
             if articles and role == "assistant" and isinstance(articles, list):
                 st.markdown("### 📚 관련 기사")
 
-                # 기본 정보 표시
                 for i in range(0, min(len(articles), 4), 2):
                     col1, col2 = st.columns(2)
 
@@ -205,19 +212,18 @@ class StreamlitChatbot:
 
         # 사용자 메시지 표시
         self.display_chat_message("user", user_input)
-        st.session_state.search_history.add(user_input)
 
         # 처리 중 표시
         with st.status("AI가 답변을 생성하고 있습니다...") as status:
             try:
-                # 챗봇 응답 생성
+                # 관련 기사 검색 + 답변 생성
                 status.update(label="관련 기사를 검색중입니다...")
                 main_article, related_articles, score, response = (
                     await st.session_state.chatbot.process_query(user_input)
                 )
 
                 status.update(label="답변을 생성하고 있습니다...")
-                # 응답 저장 및 표시 - 기존 display_chat_message 메서드 사용
+                # 답변 메시지 표시
                 self.display_chat_message(
                     "assistant",
                     response,
@@ -228,15 +234,10 @@ class StreamlitChatbot:
                 if main_article:
                     st.session_state.article_history.append(main_article)
 
-                status.update(label="완료!", state="complete")
-
-            except Exception as e:
-                st.error(f"오류가 발생했습니다: {str(e)}")
-                status.update(label="오류 발생", state="error")
-
-                # 기사 히스토리 업데이트
-                if main_article:
-                    st.session_state.article_history.append(main_article)
+                # ★ 질문/답변을 search_history에 저장(클릭 시 해당 내용 복원하기 위함)
+                st.session_state.search_history.append(
+                    {"question": user_input, "answer": response}
+                )
 
                 status.update(label="완료!", state="complete")
 
@@ -274,7 +275,6 @@ class StreamlitChatbot:
                 st.subheader("📈 카테고리별 기사 분포")
                 if not category_counts.empty:
                     st.bar_chart(category_counts)
-                    # 카테고리별 비율 표시
                     st.markdown("**카테고리별 비율:**")
                     for cat, count in category_counts.items():
                         percentage = (count / len(categories)) * 100
@@ -286,7 +286,6 @@ class StreamlitChatbot:
                 st.subheader("📅 일자별 기사 분포")
                 if not date_counts.empty:
                     st.line_chart(date_counts)
-                    # 최신순으로 날짜별 기사 수 표시
                     st.markdown("**날짜별 기사 수:**")
                     for date, count in date_counts.sort_index(ascending=False).items():
                         st.write(f"- {date.strftime('%Y-%m-%d')}: {count}건")
@@ -323,40 +322,32 @@ class StreamlitChatbot:
                         ).strftime("%Y-%m-%d"),
                     )
 
-            # 4. 최근 검색어 히스토리
+            # 4. 최근 검색어 히스토리 (질문만 표시)
             if st.session_state.search_history:
                 st.subheader("🕒 최근 검색어")
-                recent_searches = list(st.session_state.search_history)[-5:]  # 최근 5개
-                for query in reversed(recent_searches):
-                    st.text(f"• {query}")
+                recent_searches = st.session_state.search_history[-5:]  # 최근 5개
+                for item in reversed(recent_searches):
+                    st.text(f"• {item['question']}")
         else:
             st.info("아직 검색 결과가 없습니다. 질문을 입력해주세요!")
 
 
-def render_sidebar(chats):  # chats 파라미터 추가
+def render_sidebar(chats):
     """사이드바 렌더링"""
     with st.sidebar:
-        # 모델 선택 드롭다운
-        st.selectbox("AI 모델 선택", ["Gemini"], key="current_model", index=0)
+        # [대화 내용 초기화] 버튼
+        if st.button("[대화 내용 초기화]"):
+            st.session_state.messages = []
+            st.session_state.search_history = []
+            st.session_state.article_history = []
+            st.session_state.selected_chat = None
+            st.experimental_rerun()
 
-        # 검색 및 새 채팅 버튼
-        col1, col2, col3 = st.columns([1, 1, 2])
-        with col1:
-            st.button("🔍", key="search_button", help="대화 검색")
-        with col2:
-            st.button("✏️", key="new_chat_button", help="새 채팅")
-
-        # 검색창 (검색 버튼 클릭 시 표시)
-        if st.session_state.get("search_button", False):
-            st.text_input(
-                "검색어 입력", key="search_query", placeholder="검색어를 입력하세요..."
-            )
-
-        # 채팅 기록
+        # 날짜별 채팅 기록
         st.markdown("### Today")
         for chat in [c for c in chats if c["date"] == datetime.now().date()]:
             if st.button(
-                chat["question"],
+                chat["question"] or "예시 질문 (빈 값)",
                 key=f"chat_{chat['id']}",
                 help=chat["date"].strftime("%Y-%m-%d"),
             ):
@@ -364,12 +355,10 @@ def render_sidebar(chats):  # chats 파라미터 추가
 
         st.markdown("### Yesterday")
         for chat in [
-            c
-            for c in chats  # categorize_chats()를 chats로 변경
-            if c["date"] == (datetime.now().date() - timedelta(days=1))
+            c for c in chats if c["date"] == (datetime.now().date() - timedelta(days=1))
         ]:
             if st.button(
-                chat["question"],
+                chat["question"] or "예시 질문 (빈 값)",
                 key=f"chat_{chat['id']}",
                 help=chat["date"].strftime("%Y-%m-%d"),
             ):
@@ -377,39 +366,55 @@ def render_sidebar(chats):  # chats 파라미터 추가
 
         st.markdown("### Previous 7 Days")
         for chat in [
-            c
-            for c in chats  # categorize_chats()를 chats로 변경
-            if c["date"] < (datetime.now().date() - timedelta(days=1))
+            c for c in chats if c["date"] < (datetime.now().date() - timedelta(days=1))
         ]:
             if st.button(
-                chat["question"],
+                chat["question"] or "예시 질문 (빈 값)",
                 key=f"chat_{chat['id']}",
                 help=chat["date"].strftime("%Y-%m-%d"),
             ):
                 st.session_state.selected_chat = chat
+
+        # 검색 히스토리 목록
+        st.markdown("### 검색 히스토리")
+        for i, item in enumerate(st.session_state.search_history):
+            q = item["question"]
+            if st.button(q if q else "무제", key=f"search_history_{i}"):
+                st.session_state.selected_chat = {
+                    "question": item["question"],
+                    "response": item["answer"],
+                }
 
 
 def main():
     app = StreamlitChatbot()
     app.init_session()
 
-    # categorize_chats의 결과를 render_sidebar에 전달
+    # Elastic Cloud 연결 성공! 위에 모델 선택 박스 배치
+    st.markdown("## Elastic Cloud 연결 성공!")
+    # AI 모델 선택 드롭다운 (사이드바 -> 메인 영역으로 이동)
+    st.selectbox("AI 모델 선택", ["Gemini", "GPT-4", "BERT"], key="current_model")
+
+    # 상단 안내
+    st.write("새로운 대화를 시작하세요!")
+
+    # 채팅 분류
     chats = app.categorize_chats()
     render_sidebar(chats)
 
-    # 메인 채팅 영역
+    # 이미 선택된 채팅이 있다면 해당 질문/답변 표시
     if st.session_state.selected_chat:
         st.markdown(f"**Question:** {st.session_state.selected_chat['question']}")
         st.markdown(f"**Response:** {st.session_state.selected_chat['response']}")
     else:
-        st.markdown("새로운 대화를 시작하세요!")
+        st.markdown("")
 
     # 채팅 입력
     user_input = st.chat_input("메시지를 입력하세요...")
     if user_input:
         asyncio.run(app.process_user_input(user_input))
 
-    # 대화 표시
+    # 대화 표시 (사용자가 입력한 메시지들)
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.write(message["content"])
