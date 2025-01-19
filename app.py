@@ -206,6 +206,14 @@ class StreamlitChatbot:
         # 사용자 메시지 표시
         self.display_chat_message("user", user_input)
 
+        st.session_state.messages.append(
+            {"role": "user", "content": user_input}
+        )  # 수정된 코드
+
+        if "search_history" not in st.session_state:
+            st.session_state.search_history = set()
+        st.session_state.search_history.add(user_input)
+
         # 처리 중 표시
         with st.status("AI가 답변을 생성하고 있습니다...") as status:
             try:
@@ -216,6 +224,15 @@ class StreamlitChatbot:
                 )
 
                 status.update(label="답변을 생성하고 있습니다...")
+                st.session_state.messages.append(
+                    {
+                        "role": "assistant",
+                        "content": response,
+                        "articles": (
+                            [main_article] + related_articles if main_article else []
+                        ),
+                    }
+                )
                 # 응답 저장 및 표시
                 st.session_state.chat_history.append(
                     (
