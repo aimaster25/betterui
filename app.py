@@ -1,6 +1,6 @@
 import streamlit as st
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
 import pandas as pd
 from query_action import DatabaseSearch, ResponseGeneration, ResponseReview, NewsChatbot
 import os
@@ -8,8 +8,8 @@ import os
 
 # 페이지 설정
 st.set_page_config(
-    page_title="AI 뉴스 챗봇",
-    page_icon="📰",
+    page_title="AI Chat",
+    page_icon="💬",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -18,23 +18,65 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    .main {
-        padding: 0rem 1rem;
+    /* 전체 배경색 */
+    .stApp {
+        background-color: white;
     }
-    .stAlert {
-        padding: 1rem;
-        margin: 1rem 0;
+    
+    /* 사이드바 스타일링 */
+    .css-1d391kg {
+        padding-top: 2rem;
     }
+    
+    /* 채팅 메시지 스타일링 */
     .chat-message {
         padding: 1rem;
         border-radius: 0.5rem;
-        margin: 1rem 0;
+        margin-bottom: 1rem;
+        background-color: #f7f7f8;
     }
-    .article-card {
+    
+    /* 사이드바 버튼 스타일링 */
+    .sidebar-button {
+        background-color: transparent;
+        border: none;
+        padding: 0.5rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        width: 100%;
+        color: #1e1e1e;
+    }
+    
+    /* 채팅 기록 스타일링 */
+    .chat-history-item {
+        padding: 0.5rem;
+        cursor: pointer;
+        border-radius: 0.3rem;
+    }
+    .chat-history-item:hover {
+        background-color: #f0f0f0;
+    }
+    
+    /* 모델 선택 드롭다운 스타일링 */
+    .model-selector {
+        margin-top: 1rem;
+        width: 100%;
+    }
+    
+    /* 헤더 아이콘 스타일링 */
+    .header-icon {
+        font-size: 1.2rem;
+        margin-right: 0.5rem;
+        color: #666;
+    }
+    
+    /* 검색창 스타일링 */
+    .search-box {
+        padding: 0.5rem;
+        border-radius: 0.3rem;
         border: 1px solid #ddd;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        margin: 0.5rem 0;
+        margin-bottom: 1rem;
     }
     </style>
 """,
@@ -46,31 +88,58 @@ class StreamlitChatbot:
     def __init__(self):
         # 세션 상태 초기화
         if "chat_history" not in st.session_state:
-            st.session_state.chat_history = []
+            st.session_state.chat_history = {
+                "today": [],
+                "yesterday": [],
+                "previous_7_days": [],
+            }
+        if "current_model" not in st.session_state:
+            st.session_state.current_model = "Gemini"
+        if "selected_chat" not in st.session_state:
+            st.session_state.selected_chat = None
+        if "messages" not in st.session_state:
+            st.session_state.messages = []
+        if "search_query" not in st.session_state:
+            st.session_state.search_query = ""
+
+        # chatbot 초기화 추가
         if "chatbot" not in st.session_state:
-            st.session_state.chatbot = NewsChatbot()
-        if "article_history" not in st.session_state:
-            st.session_state.article_history = []
-        if "search_history" not in st.session_state:
-            st.session_state.search_history = set()
+            st.session_state.chatbot = NewsChatbot()  # NewsChatbot 인스턴스 생성
 
-    def setup_sidebar(self):
-        """사이드바 설정"""
-        with st.sidebar:
-            st.header("📊 챗봇 상태")
-            st.write("연결된 데이터베이스:")
-            st.info("MongoDB: 뉴스 기사 저장소\nElasticsearch: 검색 엔진")
+    @staticmethod
+    def init_session():
+        if "messages" not in st.session_state:
+            st.session_state.messages = []
+        if "search_query" not in st.session_state:
+            st.session_state.search_query = ""
 
-            st.header("🔍 검색 히스토리")
-            if st.session_state.search_history:
-                for query in list(st.session_state.search_history)[-5:]:
-                    st.text(f"• {query}")
+    @staticmethod
+    def categorize_chats():
+        """채팅을 날짜별로 분류"""
+        today = datetime.now().date()
+        yesterday = today - timedelta(days=1)
+        week_ago = today - timedelta(days=7)
 
-            st.header("⚙️ 설정")
-            if st.button("대화 내용 초기화"):
-                st.session_state.chat_history = []
-                st.session_state.article_history = []
-                st.rerun()
+        # 실제 애플리케이션에서는 데이터베이스에서 가져올 수 있음
+        sample_chats = [
+            {
+                "id": 1,
+                "date": today,
+                "question": "",
+            },
+            {
+                "id": 2,
+                "date": yesterday,
+                "question": "",
+            },
+            {
+                "id": 3,
+                "date": week_ago,
+                "question": "",
+            },
+        ]
+
+        return sample_chats
 
     def display_article_info(self, article, score=None):
         """기사 정보 표시"""
@@ -133,8 +202,6 @@ class StreamlitChatbot:
 
         # 사용자 메시지 표시
         self.display_chat_message("user", user_input)
-        st.session_state.chat_history.append(("user", user_input))
-        st.session_state.search_history.add(user_input)
 
         # 처리 중 표시
         with st.status("AI가 답변을 생성하고 있습니다...") as status:
@@ -259,39 +326,86 @@ class StreamlitChatbot:
             st.info("아직 검색 결과가 없습니다. 질문을 입력해주세요!")
 
 
+def render_sidebar(chats):  # chats 파라미터 추가
+    """사이드바 렌더링"""
+    with st.sidebar:
+        # 모델 선택 드롭다운
+        st.selectbox("AI 모델 선택", ["Gemini"], key="current_model", index=0)
+
+        # 검색 및 새 채팅 버튼
+        col1, col2, col3 = st.columns([1, 1, 2])
+        with col1:
+            st.button("🔍", key="search_button", help="대화 검색")
+        with col2:
+            st.button("✏️", key="new_chat_button", help="새 채팅")
+
+        # 검색창 (검색 버튼 클릭 시 표시)
+        if st.session_state.get("search_button", False):
+            st.text_input(
+                "검색어 입력", key="search_query", placeholder="검색어를 입력하세요..."
+            )
+
+        # 채팅 기록
+        st.markdown("### Today")
+        for chat in [c for c in chats if c["date"] == datetime.now().date()]:
+            if st.button(
+                chat["question"],
+                key=f"chat_{chat['id']}",
+                help=chat["date"].strftime("%Y-%m-%d"),
+            ):
+                st.session_state.selected_chat = chat
+
+        st.markdown("### Yesterday")
+        for chat in [
+            c
+            for c in chats  # categorize_chats()를 chats로 변경
+            if c["date"] == (datetime.now().date() - timedelta(days=1))
+        ]:
+            if st.button(
+                chat["question"],
+                key=f"chat_{chat['id']}",
+                help=chat["date"].strftime("%Y-%m-%d"),
+            ):
+                st.session_state.selected_chat = chat
+
+        st.markdown("### Previous 7 Days")
+        for chat in [
+            c
+            for c in chats  # categorize_chats()를 chats로 변경
+            if c["date"] < (datetime.now().date() - timedelta(days=1))
+        ]:
+            if st.button(
+                chat["question"],
+                key=f"chat_{chat['id']}",
+                help=chat["date"].strftime("%Y-%m-%d"),
+            ):
+                st.session_state.selected_chat = chat
+
+
 def main():
     app = StreamlitChatbot()
-    app.setup_sidebar()
+    app.init_session()
 
-    st.title("📰 AI 뉴스 챗봇")
+    # categorize_chats의 결과를 render_sidebar에 전달
+    chats = app.categorize_chats()
+    render_sidebar(chats)
 
-    # 챗봇 설명
-    st.markdown(
-        """
-    ### 👋 안녕하세요! AI 뉴스 챗봇입니다.
-    뉴스 기사에 대해 궁금한 점을 자유롭게 물어보세요. 관련 기사를 찾아 답변해드립니다.
-    
-    **예시 질문:**
-    - "최근 AI 기술 동향이 궁금해요"
-    - "스타트업 투자 현황에 대해 알려주세요"
-    - "새로운 AI 서비스에는 어떤 것들이 있나요?"
-    """
-    )
+    # 메인 채팅 영역
+    if st.session_state.selected_chat:
+        st.markdown(f"**Question:** {st.session_state.selected_chat['question']}")
+        st.markdown(f"**Response:** {st.session_state.selected_chat['response']}")
+    else:
+        st.markdown("새로운 대화를 시작하세요!")
 
-    # 채팅 히스토리 표시
-    for message in st.session_state.chat_history:
-        if len(message) == 3:  # 챗봇 응답 (관련 기사 포함)
-            app.display_chat_message(message[0], message[1], message[2])
-        else:  # 사용자 메시지
-            app.display_chat_message(message[0], message[1])
-
-    # # 분석 정보 표시
-    # app.show_analytics()
-
-    # 사용자 입력
-    user_input = st.chat_input("질문을 입력하세요...")
+    # 채팅 입력
+    user_input = st.chat_input("메시지를 입력하세요...")
     if user_input:
         asyncio.run(app.process_user_input(user_input))
+
+    # 대화 표시
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.write(message["content"])
 
 
 if __name__ == "__main__":
