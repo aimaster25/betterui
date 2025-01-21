@@ -309,7 +309,7 @@ def render_sidebar():
                 st.session_state.search_history = []
                 st.session_state.article_history = []
                 st.session_state.selected_chat = None
-                st.experimental_rerun()
+                st.rerun()
 
         # 검색 히스토리 목록
         for i, item in enumerate(st.session_state.search_history):
